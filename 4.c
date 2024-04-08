@@ -48,19 +48,19 @@ int main()
 
 			"mul t2,t2,t1\n\t"
 			"add t2,t3,t2\n\t"
+			"li t3,3\n\t"
 			"sw t2,0(t0)\n\t"
 
 			"addi t6,t6,1\n\t"
-			"li t3,3\n\t"
-			"blt t6,t3,loop3\n\t"
+			"bne t6,t3,loop3\n\t"
+			"li t3,2\n\t"
 
 		"addi t5,t5,1\n\t"
-		"li t3,2\n\t"
-		"blt t5,t3,loop2\n\t"
+		"bne t5,t3,loop2\n\t"
+		"li t3,3\n\t"
 
 	"addi t4,t4,1\n\t"
-	"li t3,3\n\t"
-	"blt t4,t3,loop1\n\t"
+	"bne t4,t3,loop1\n\t"
 
 
 	:
