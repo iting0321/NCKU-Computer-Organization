@@ -1,98 +1,188 @@
 .global conv2d
+
 conv2d:
+
 # a0: address of input
+
 # a1: address of kernel
+
 # a2: w
+
 # a3: h
+
 # a4: ksize
+
 # a5: s
 
+
+
 # prologue
-        # addi sp, sp, -4
+
+        # addi sp, sp , -4
+
         # sw a0, 0(sp)
 
+
+
 # start of your implementation
-	li t0,0 # t0=jj
-loop_jj:
-	bge t0,a2,end
 
-	#loop_ii
-	li t1, 0 # t1=ii
-loop_ii:
-	bge t1, a3,next_jj
-	#loop_j
-	mv t2, t0 # t2=j
-loop_j:
-	bge t2, a2, next_ii
+# Initializations
+    sub t0, a2, a4      # t0 = w - ksize
+    sub t1, a3, a4      # t1 = h - ksize
+    li  t2, 0           # t2 = j = 0
 
-	#loop_i
-	mv t3, t1 #t3=i
-loop_i:
-	bge t3, a3, next_j
-	
-	li t4, 0 # sum=t4
-	#loop_n
-	li t5, 0 #n=t5
-loop_n:
-	bge t5, a4, end_loop_n
+	lw x18, 0(a1)
+	lw x19, 4(a1)
+	lw x20, 8(a1)
+	lw x21, 12(a1)
+	lw x22, 16(a1)
+	lw x23, 20(a1)
+	lw x24, 24(a1)
+	lw x25, 28(a1)
+	lw x26, 32(a1)
 
-	#loop_m
-	li t6, 0 #m=t6
-loop_m:
-	bge t6, a4, next_n
-	# a6, a7
-	add a6, t3, t6 # (i+m)
-	mul a6, a6, a2 # (i+m)*w
-	add a6, a6, t2 # (i+m)*w + j
-	add a6, a6, t5 # (i+m)*w + j+n
-	slli a6, a6, 2
-	add a6, a6, a0 # address of input[]
-	lw  a6, 0(a6) # input[]
+# Outer loop for j
+1:  bgt t2, t0, 3f      # if j > (w - ksize) exit outer loop
 
-	mul a7, a4, t6 # m*ksize
-	add a7, a7, t5 # m*ksize + n
-	slli a7, a7, 2
-	add a7, a7, a1 # address of kernel[]
-	lw  a7, 0(a7) # kernel[]
+# Inner loop for i
+    li  t3, 0           # t3 = i = 0
+2:  bgt t3, t1, 4f      # if i > (h - ksize) exit inner loop
 
-	mul a6,a7, a6 # input[] * kernel[]
-	add t4, t4, a6 # sum += input * kernel
-	
-    	add t6, t6, a5         # m += s
-    j loop_m
+# Initialize sum
+    li  t4, 0           # t4 = sum = 0
 
-next_n:
+# Convolution sum calculation
+    # Unrolled for ksize = 3 and s = 1
+    # First row
+    #lw  t6, 0(a1)       # kernel[0 * ksize + 0]
+    mul t5, t3, a2      # i*w
+    add t5, t5, t2      # i*w+j
+    slli t5, t5, 2
+    add t5, t5, a0
+    lw t5, 0(t5)
+    mul t5, t5, x18
+    add t4, t4, t5
 
-    add t5, t5, a5         # n += s
-    j loop_n
+    #lw  t6, 4(a1)       # kernel[0 * ksize + 1]
+    mul t5, t3, a2      # i*w
+    add t5, t5, t2      # i*w+j
+    addi t5, t5, 1
+    slli t5, t5, 2
+    add t5, t5, a0
+    lw t5, 0(t5)
+    mul t5, t5, x19
+    add t4, t4, t5
 
-end_loop_n:
-	mul a6, t3, a2 # i*w
-	add a6, a6, t2 # i*w + j
-	slli a6, a6, 2
-	add a6, a0, a6 
-	sw  t4, 0(a6) # input[i*w + j] = sum
-	addi t3, t3, 1          # i++
-    	j loop_i
-next_j:
-    addi t2, t2, 1          # j++
-    j loop_j
+    #lw  t6, 8(a1)       # kernel[0 * ksize + 2]
+    mul t5, t3, a2      # i*w
+    add t5, t5, t2      # i*w+j
+    addi t5, t5, 2
+    slli t5, t5, 2
+    add t5, t5, a0
+    lw t5, 0(t5)
+    mul t5, t5, x20
+    add t4, t4, t5
 
-next_ii:
-    addi t1, t1, 8         # ii += blockSize
-    j loop_ii
+    # Second row
+    #lw  t6, 12(a1)      # kernel[1 * ksize + 0]
+    add t5, t3, zero
+    addi t5, t5, 1      # i+1
+    mul t5, t5, a2      # (i+1)*w
+    add t5, t5, t2      # (i+1)*w+j
+    slli t5, t5, 2
+    add t5, t5, a0
+    lw t5, 0(t5)
+    mul t5, t5, x21
+    add t4, t4, t5
 
-next_jj:
-    addi t0, t0, 8         # jj += blockSize
-    j loop_jj
+    #lw  t6, 16(a1)      # kernel[1 * ksize + 1]
+    add t5, t3, zero
+    addi t5, t5, 1      # i+1
+    mul t5, t5, a2      # (i+1)*w
+    add t5, t5, t2      # (i+1)*w+j
+    addi t5, t5, 1
+    slli t5, t5, 2
+    add t5, t5, a0
+    lw t5, 0(t5)
+    mul t5, t5, x22
+    add t4, t4, t5
 
-end:
-	
+    #lw  t6, 20(a1)      # kernel[1 * ksize + 2]
+    add t5, t3, zero
+    addi t5, t5, 1      # i+1
+    mul t5, t5, a2      # (i+1)*w
+    add t5, t5, t2      # (i+1)*w+j
+    addi t5, t5, 2
+    slli t5, t5, 2
+    add t5, t5, a0
+    lw t5, 0(t5)
+    mul t5, t5, x23
+    add t4, t4, t5
+
+    # Third row
+    #lw  t6, 24(a1)      # kernel[2 * ksize + 0]
+    add t5, t3, zero
+    addi t5, t5, 2      # i+2
+    mul t5, t5, a2      # (i+2)*w
+    add t5, t5, t2      # (i+2)*w+j
+    slli t5, t5, 2
+    add t5, t5, a0
+    lw t5, 0(t5)
+    mul t5, t5, x24
+    add t4, t4, t5
+
+    #lw  t6, 28(a1)      # kernel[2 * ksize + 1]
+    add t5, t3, zero
+    addi t5, t5, 2      # i+2
+    mul t5, t5, a2      # (i+2)*w
+    add t5, t5, t2      # (i+2)*w+j
+    addi t5, t5, 1
+    slli t5, t5, 2
+    add t5, t5, a0
+    lw t5, 0(t5)
+    mul t5, t5, x25
+    add t4, t4, t5
+
+    #lw  t6, 32(a1)      # kernel[2 * ksize + 2]
+    add t5, t3, zero
+    addi t5, t5, 2      # i+2
+    mul t5, t5, a2      # (i+2)*w
+    add t5, t5, t2      # (i+2)*w+j
+    addi t5, t5, 2
+    slli t5, t5, 2
+    add t5, t5, a0
+    lw t5, 0(t5)
+    mul t5, t5, x26
+    add t4, t4, t5
+
+# Store the result in input[i * w + j]
+    mul t5, t3, a2      # t5 = i * w
+    add t5, t5, t2      # t5 = i * w + j
+    slli t5, t5, 2      # t5 = 4 * (i * w + j)
+    add t5, a0, t5      # t5 = address of input[i * w + j]
+    sw t4, 0(t5)        # input[i * w + j] = sum
+
+# Increment i and continue inner loop
+    addi t3, t3, 1
+    ble t3, t1, 2b
+
+# Increment j and continue outer loop
+    addi t2, t2, 1
+    ble t2, t0, 1b
+
+3:  # End of outer loop
+4:  # End of inner loop
+
         
+
 # end of your implementation
 
-# epilogue
-        # lw a0, 0(sp)
-        # addi sp, sp, 4
-        ret
 
+
+# epilogue
+
+        # lw a0, 0(sp)
+
+        # addi sp, sp, 4
+
+        ret
