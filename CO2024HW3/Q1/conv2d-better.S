@@ -29,7 +29,7 @@ conv2d:
 # Initializations
     sub t0, a2, a4      # t0 = w - ksize
     sub t1, a3, a4      # t1 = h - ksize
-    li  t2, 0           # t2 = j = 0
+    li  t3, 0           # t2 = j = 0
 
 	lw x18, 0(a1)
 	lw x19, 4(a1)
@@ -42,11 +42,11 @@ conv2d:
 	lw x26, 32(a1)
 
 # Outer loop for j
-1:  bgt t2, t0, 3f      # if j > (w - ksize) exit outer loop
+1:  bgt t3, t1, 3f      # if j > (w - ksize) exit outer loop
 
 # Inner loop for i
-    li  t3, 0           # t3 = i = 0
-2:  bgt t3, t1, 4f      # if i > (h - ksize) exit inner loop
+    li  t2, 0           # t3 = i = 0
+2:  bgt t2, t0, 4f      # if i > (h - ksize) exit inner loop
 
 # Initialize sum
     li  t4, 0           # t4 = sum = 0
@@ -163,12 +163,12 @@ conv2d:
     sw t4, 0(t5)        # input[i * w + j] = sum
 
 # Increment i and continue inner loop
-    addi t3, t3, 1
-    ble t3, t1, 2b
+    addi t2, t2, 1
+    ble t2, t0, 2b
 
 # Increment j and continue outer loop
-    addi t2, t2, 1
-    ble t2, t0, 1b
+    addi t3, t3, 1
+    ble t3, t1, 1b
 
 3:  # End of outer loop
 4:  # End of inner loop
