@@ -58,6 +58,7 @@ void cache_sim_t::init()
   writebacks = 0;
 
   miss_handler = NULL;
+  fifo_que_per_set.resize(sets);
 }
 
 cache_sim_t::cache_sim_t(const cache_sim_t& rhs)
@@ -76,6 +77,9 @@ cache_sim_t::~cache_sim_t()
 
 void cache_sim_t::print_stats()
 {
+  if (read_accesses + write_accesses == 0)
+    return;
+
   float mr = 100.0f*(read_misses+write_misses)/(read_accesses+write_accesses);
 
   std::cout << std::setprecision(3) << std::fixed;
@@ -111,10 +115,19 @@ uint64_t* cache_sim_t::check_tag(uint64_t addr)
 
 uint64_t cache_sim_t::victimize(uint64_t addr)
 {
+  
   size_t idx = (addr >> idx_shift) & (sets-1);
-  size_t way = lfsr.next() % ways;
+  if(fifo_que_per_set[idx].empty()==1){
+	  for(size_t i=0;i<ways;++i){
+		  fifo_que_per_set[idx].push(i);
+	  }
+  }
+
+  size_t way = fifo_que_per_set[idx].front();
+  fifo_que_per_set[idx].pop();
   uint64_t victim = tags[idx*ways + way];
   tags[idx*ways + way] = (addr >> idx_shift) | VALID;
+  fifo_que_per_set[idx].push(way);
   return victim;
 }
 

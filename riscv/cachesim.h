@@ -9,6 +9,8 @@
 #include <string>
 #include <map>
 #include <cstdint>
+#include <queue>
+#include <unordered_map>
 
 class lfsr_t
 {
@@ -51,6 +53,7 @@ class cache_sim_t
   size_t idx_shift;
 
   uint64_t* tags;
+  std :: vector< std::queue<size_t>> fifo_que_per_set;
   
   uint64_t read_accesses;
   uint64_t read_misses;
@@ -75,6 +78,7 @@ class fa_cache_sim_t : public cache_sim_t
  private:
   static bool cmp(uint64_t a, uint64_t b);
   std::map<uint64_t, uint64_t> tags;
+  //std::queue<uint64_t> fifo_queue;
 };
 
 class cache_memtracer_t : public memtracer_t
